@@ -1,4 +1,3 @@
-library(stringr)
 
 bwt_encode <- function(s) {
   if(!require(stringr)) {
