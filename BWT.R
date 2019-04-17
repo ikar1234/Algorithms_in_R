@@ -1,3 +1,4 @@
+# TODO: add documentation
 
 bwt_encode <- function(s) {
   if(!require(stringr)) {
