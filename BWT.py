@@ -5,13 +5,10 @@ from collections import Counter
 
 
 def bwt(s):
-    """Apply Burrows-Wheeler transform to input string. Not indicated by a unique byte but use index list"""
-    # Table of rotations of string
     table = [s[i:] + s[:i] for i in range(len(s))]
     # Sorted table
     table_sorted = table.copy()
     table_sorted.sort()
-    # Get index list of ((every string in sorted table)'s next string in unsorted table)'s index in sorted table
     indexlist = []
     for t in table_sorted:
         index1 = table.index(t)
@@ -23,7 +20,7 @@ def bwt(s):
 
 
 def ibwt(r,indexlist):
-    """Inverse Burrows-Wheeler transform. Not indicated by a unique byte but use index list"""
+    """Inverse BWT"""
     s = ''
     x = indexlist[0]
     for _ in r:
@@ -33,7 +30,6 @@ def ibwt(r,indexlist):
 
 
 def rle(string):
-    """ Is actually very good!"""
     new = string[0]+''.join([string[x] if string[x-1]==string[x] else '_'+string[x] for x in range(1,len(string)) ])
     new1 = new.split('_')
     new2 = ''.join([str(len(x))+x[0] if len(x)>2 else ''.join(x) for x in new1])
@@ -53,6 +49,7 @@ def rank(string):
 
 
 def search_in_bwt(p,t):
+    """Exact search in BWT"""
     p_rev= p[::-1]
     last = bwt(t)[0]
     pos = posfast(t)
