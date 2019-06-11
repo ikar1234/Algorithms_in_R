@@ -47,11 +47,13 @@ def rank(string):
         r[p[i]] = i
     return r
 
+# Much faster and shorter version
+bwt_from_pos = lambda string: [string[x-1] for x in posfast(string)]
 
 def search_in_bwt(p,t):
     """Exact search in BWT"""
     p_rev= p[::-1]
-    last = bwt(t)[0]
+    last = bwt_from_pos(t)
     pos = posfast(t)
     count = Counter(last)
     c_array = {x:0 for x in count.keys()}
@@ -91,4 +93,8 @@ def search_in_bwt(p,t):
 posfast = lambda string: tuple(sorted(range(len(string)), key=lambda x: string[x:]))
 
 if __name__ == '__main__':
-    print(search_in_bwt("SS", "MISSISSIPPI$"))
+    t1 = time()
+    print(search_in_bwt("SS", "MISSISSIPPI$"*3000))
+    t2 = time()
+    print("Time 2",t2-t1)
+
