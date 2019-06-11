@@ -87,49 +87,8 @@ def search_in_bwt(p,t):
     return [pos[i] for i in range(l,r+1)]
 
 
-# Suffix array
-
-
-def maximal_prefix(a,b):
-    if len(a)==0 or len(b)==0:
-        return 0
-    c = 0
-    while c<len(a) and c<len(b) and a[c]==b[c]:
-        c+=1
-    return c
-
-
+# Naive suffix array - needed for finding positions in original text
 posfast = lambda string: tuple(sorted(range(len(string)), key=lambda x: string[x:]))
-
-
-# Kasai O(n) algorithm
-def build_lcp_array(string, suffix_array):
-    inverse_suffix_array = np.full(len(suffix_array),-1)
-    for i, suffix in enumerate(suffix_array):
-        inverse_suffix_array[suffix] = i
-    lcp_array = np.full(len(suffix_array),-1)
-    lcp = 0
-    for i in inverse_suffix_array:
-        if i > 0:
-            i0, i1 = suffix_array[i], suffix_array[i-1]
-            while max(i0,i1)+lcp < len(string) and string[i0+lcp] == string[i1+lcp]:
-                lcp += 1
-            lcp_array[i] = lcp
-            lcp = max(0, lcp - 1)
-        else:
-            lcp = 0
-    return tuple(lcp_array)
-
-
-# t1 = time()
-# print(posfast("acgttgtacgtt"*1000))
-# print("Time 2: ",time()-t1)
-
-# t1 = time()
-# x = "attqwweattyuiooattdfghjattklnmattzxcvattqlvpatt"*400
-# x = "CABACBCBACABCABCACBC$"
-# print(build_lcp_array(x,posfast(x)))
-# print(posfast("GCATAAATAAA$"))
 
 if __name__ == '__main__':
     print(search_in_bwt("SS", "MISSISSIPPI$"))
