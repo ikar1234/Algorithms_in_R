@@ -1,3 +1,5 @@
+import numpy as np
+
 # Suffix array
 posfast = lambda string: tuple(sorted(range(len(string)), key=lambda x: string[x:]))
 
