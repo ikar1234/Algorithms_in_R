@@ -20,8 +20,9 @@ def lyndon_from_sa(x):
     # use suffix permutation array (inverse of SA) for fast comparison of suffixes
     r = rank(x)
     p = posfast(x)
+    # first factor
     f = r[0]
-    l = [p[f]]
+    l = [p[f]] # =0
     for i in r:
         if i<f:
             f=i
