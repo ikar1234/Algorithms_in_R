@@ -3,4 +3,4 @@ I implemented a plenty of algorithms in R and Python
 
 - Burrows- Wheeler Transform and exact search in BWT
 - Lyndon factorization from Suffix array [[1](http://dx.doi.org/10.1016/j.jda.2014.06.001)]
-- Lyndon factorization of Run-length encoded string () [[2](https://doi.org/10.3390/a12060124)]
+- Skew algorithm for suffix arrays
