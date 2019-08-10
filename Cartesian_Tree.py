@@ -7,19 +7,24 @@ def isnone(cls) -> bool:
 
 class Node:
 
-    def __init__(self, val=None, parent=None, left=None, right=None, leaf=False):
+    def __init__(self, val=None, parent=None, left=None, right=None,index=-1):
+        # TODO: self.left resp. self.right should be a (named)tuple with the node and the corresponding string
+        # TODO: use the indices of the LCP to get the suffixes from pos and the labeling of the edges
         self.val = val
         # return whole node
         self.parent = parent
         self.left = left
+        # edges labeled with substrings, pointing to the children of the node
+        self.leftedge = () # / None
+        self.rightedge = ()
         self.right = right
         # store multiple keys in a linked list
         self.lbrother = None
         self.rbrother = None
-        # value of the SA are stored in the leaves
-        self.leaf = leaf
-        # needed for the tree traversal
+        # used for the tree traversal
         self.visited = False
+        # points to the corresponding index in the LCP-lcpay; we'll need it when making the final suffix tree
+        self.index = index
 
     def left(self):
         curr_node = self.left
@@ -54,7 +59,18 @@ class Node:
             print('-', end='')
         print(' ]', end='')
 
-    # both Node() and None should return True
+    def get_leaf(self, right=True) -> int:
+        """Returns one of the leaves under some edge. For speed reasons, this leaf will always be
+        the leftmost one(LCP lcpay cannot be descending)."""
+        if right:
+            child = self.right
+            while not isnone(child.left):
+                child = child.left
+        else:
+            child = self.left
+            while not isnone(child.left):
+                child = child.left
+        return child.val
 
     # needed to know whether the current node is also the root
     def __eq__(self, other):
@@ -63,9 +79,9 @@ class Node:
 
 class CartesianTree:
     """
-    Desperate approach to implement Cartesian trees, defined as follows:
+    Approach to implement Cartesian trees, defined as follows:
     We aim to build a heap from given sequence
-    Given an array, the minimum/minima/ is at the top and all elements left from it
+    Given an lcp array, the minimum/minima/ is at the top and all elements left from it
     are in the left subtree, respectively for the right.
     Linear time construction: Process the sequence from left to right, and proceed as follows:
     if the current element is bigger than the last one, put it as a right child, else go up in the tree
@@ -74,51 +90,54 @@ class CartesianTree:
     """
     Implementation details:
     We need a pointer to the current node that we are processing;
-    further we need to have backtraces. i.e. to be able to go from child to parent 
+    further we need to have backtraces. i.e. to be able to go from child to parent. 
     """
-    def __init__(self, arr):
-        self.arr = arr
-        if len(arr) == 0:
+    def __init__(self, lcp):
+        self.lcp = lcp
+        if len(lcp) == 0:
             self.root = Node()
         else:
-            self.root = Node(val=arr[0], parent=Node(), left=Node(), right=Node())
+            self.root = Node(val=lcp[0], parent=Node(), left=Node(), right=Node())
         # make root active node
         self.active_node = self.root
+        self.root.index = 0
 
-        for x in range(1, len(arr)):
+        for x in range(1, len(lcp)):
             # find next smaller node and make it active
-            while self.active_node != self.root and self.active_node.val > arr[x]:
+            while self.active_node != self.root and self.active_node.val > lcp[x]:
                 self.active_node = self.active_node.parent
             if self.active_node == self.root:
-                if self.active_node.val > arr[x]:
+                if self.active_node.val > lcp[x]:
                     # make the root left child of the new node
-                    next_node = Node(val=arr[x], parent=Node(), left=self.root, right=Node())
+                    next_node = Node(val=lcp[x], parent=Node(), left=self.root, right=Node(), index=x)
                     self.root = next_node
                     self.active_node = next_node
                     # print(f"New root created: {self.root.val}")
                 # handle special case with multiple keys in node
-                elif self.active_node.val == arr[x]:
-                    next_node = Node(val=arr[x], parent=Node(), left=self.active_node.right, right=Node())
+                elif self.active_node.val == lcp[x]:
+                    next_node = Node(val=lcp[x], parent=Node(), left=self.active_node.right, right=Node(), index=x)
                     self.active_node.rbrother = next_node
                     next_node.lbrother = self.active_node
                     self.active_node = next_node
                 else:
                     # put new node as a right child, possibly between two nodes
-                    next_node = Node(val=arr[x], parent=self.active_node, left=self.active_node.right, right=Node())
+                    next_node = Node(val=lcp[x], parent=self.active_node,
+                                     left=self.active_node.right, right=Node(), index=x)
                     self.active_node.right = next_node
                     self.active_node = next_node
 
             else:
                 # multiple keys
-                if self.active_node.val == arr[x]:
-                    next_node = Node(val=arr[x], parent=self.active_node.parent,
-                                     left=self.active_node.right, right=Node())
+                if self.active_node.val == lcp[x]:
+                    next_node = Node(val=lcp[x], parent=self.active_node.parent,
+                                     left=self.active_node.right, right=Node(), index=x)
                     self.active_node.rbrother = next_node
                     next_node.lbrother = self.active_node
                     self.active_node = next_node
                 else:
                     # insert new node between two nodes
-                    next_node = Node(val=arr[x], parent=self.active_node, left=self.active_node.right, right=Node())
+                    next_node = Node(val=lcp[x], parent=self.active_node, left=self.active_node.right,
+                                     right=Node(), index=x)
                     self.active_node.right.parent = next_node
                     self.active_node.right = next_node
                     self.active_node = next_node
@@ -127,7 +146,7 @@ class CartesianTree:
         curr_node = self.root
         root_list = []
         while not isnone(curr_node.rbrother):
-            r.append(self.root.rbrother)
+            root_list.append(self.root.rbrother)
             curr_node = curr_node.rbrother
         return [self.root]+root_list
 
@@ -154,6 +173,7 @@ class CartesianTree:
                     # every time we go back to the first key in the parent, and still can find the right key,
                     # since all keys up to this key are marked as visited
                     curr_node.visited = True
+                    # as we are assuming that we will go to him via his left brother
                     curr_node = curr_node.parent
                     # print('Go to father', curr_node.val, c, iter)
                 else:
@@ -168,32 +188,36 @@ class CartesianTree:
             if isnone(curr_node.left) and isnone(curr_node.lbrother):
                 # print('Left child is None, leftmost mode',curr_node.val, c, iter)
                 curr_node.visited = True
-                curr_node.left = Node(val=pos[c], leaf=True)
+                curr_node.leftedge = (pos[0],len(pos))
+                curr_node.left = Node(val=pos[c])
                 c += 1
             elif isnone(curr_node.left):
-                # print('Left is None and middle node',curr_node.val, c, iter)
-                curr_node.visited = True
-                curr_node = curr_node.left
-                # iter+=1
-                continue
+                # this shouldn't happen
+                assert False
             # we are at a leaf of the original tree
             if isnone(curr_node.right):
                 # print('Right None',curr_node.val, c, iter)
                 curr_node.visited = True
-                curr_node.right = Node(val=pos[c], leaf=True)
+                # last node goes to the end of the string
+                curr_node.rightedge = (pos[curr_node.index+1]+curr_node.val,len(pos))  # curr_node.get_leaf(right=True)
+                curr_node.right = Node(val=pos[c])
                 if not isnone(curr_node.rbrother):
                     curr_node.rbrother.left = curr_node.right
                 c+=1
             else:
+                # go to right (non-leaf) child
                 curr_node.visited = True
+                # the value curr_node.val corresponds to the lcp of pos[c] and pos[c-1]
+                curr_node.rightedge = (curr_node.get_leaf(right=True) + curr_node.val,
+                                       curr_node.get_leaf(right=True) + curr_node.right.val-1)
                 curr_node = curr_node.right
+
             # assert not isnone(curr_node)
             # iter+=1
 
 
-# string = aaaaa$ -> exclude first 0; SA = 6,5,4,3,2,1
-ct = CartesianTree([0,0,2,3,4])
-ct.decorate([10,20,30,40,50,60])
+# string = ababa$
+ct = CartesianTree(lcp=[0,1,3,0,2])
+ct.decorate(pos=[6,5,3,1,4,2])
 r = ct.get_root()
-# print(r[1].right.right.left.val)
-r[0].rec_print()
+print(r[1].right.rightedge)   # 1 or 3 depending on whether we find leftmost or rightmost
